@@ -1,8 +1,8 @@
 """
 low level api access to muspy.com
 
-implements all API endpoints defined in the documentation found at
-https://github.com/alexkay/muspy/tree/master/api/ at a low level.
+implementation of all API endpoints described at
+https://github.com/alexkay/muspy/tree/master/api/
 """
 
 
@@ -18,7 +18,7 @@ LASTFM_IMPORT_LIMIT = 500  # maximum artists to import from last.fm
 API_BASE_URL = 'https://muspy.com/api/1'  # base url for API calls
 
 
-def get_artist(mbid):  # TODO: testing
+def get_artist(mbid):
     """
     get information about an artist
 
@@ -32,7 +32,7 @@ def get_artist(mbid):  # TODO: testing
     return response.json()
 
 
-def list_subscribed_artists(auth, userid):
+def list_artist_subscriptions(auth, userid):
     """
     list all artists a user subscribed to
 
@@ -47,30 +47,31 @@ def list_subscribed_artists(auth, userid):
     return response.json()
 
 
-def subscribe_to_artist(auth, userid, mbid):  # TODO: testing
+def add_artist_subscription(auth, userid, artist_mbid):
     """
     add an artist to the list of subscribed artists
 
     :param tuple auth: authentication data (username, password)
     :param str userid: user ID (must match auth data)
-    :param str mbid: musicbrainz ID of the artist to add
+    :param str artist_mbid: musicbrainz ID of the artist to add
     :return: True on success
     """
-    url = "%s/artists/%s/%s" % (API_BASE_URL, userid, mbid)
+    url = "%s/artists/%s/%s" % (API_BASE_URL, userid, artist_mbid)
     response = requests.put(url, auth=auth)
     response.raise_for_status()
     return True
 
 
-def import_lastfm_artists(auth, userid, username, count=LASTFM_IMPORT_LIMIT,
-                          period='overall'):  # TODO: testing
+def import_lastfm_subscriptions(auth, userid, lastfm_username,
+                                limit=LASTFM_IMPORT_LIMIT,
+                                period='overall'):  # TODO: testing
     """
     import last.fm artists to a user
 
     :param tuple auth: authentication data (username, password)
     :param str userid: user ID (must match auth data)
-    :param str username: last.fm username
-    :param int count: number of artists to import
+    :param str lastfm_username: last.fm lastfm_username
+    :param int limit: number of artists to import
     :param str period: period to examine. one of 'overall', '12month',
                       '6month', '3month' or '7day'
     :return: True on success
@@ -78,46 +79,46 @@ def import_lastfm_artists(auth, userid, username, count=LASTFM_IMPORT_LIMIT,
     url = "%s/artists/%s" % (API_BASE_URL, userid)
     if period not in ('overall', '12month', '6month', '3month', '7day'):
         raise ValueError("invalid period: %r" % period)
-    if count < 0 or count > LASTFM_IMPORT_LIMIT:
-        raise ValueError("invalid count: %r" % count)
+    if limit < 0 or limit > LASTFM_IMPORT_LIMIT:
+        raise ValueError("invalid limit: %r" % limit)
 
-    response = requests.put(url, auth=auth, data={"username": username,
-                                                  "count": count,
-                                                  "period": period})
+    response = requests.put(url, auth=auth,
+                            data={"lastfm_username": lastfm_username,
+                                  "count": limit, "period": period})
     response.raise_for_status()
     return True
 
 
-def unsubscribe_from_artist(auth, userid, mbid):  # TODO: testing
+def remove_artist_subscription(auth, userid, artist_mbid):
     """
     remove an artist from the list of subscribed artists
 
     :param tuple auth: tuple containint (username, password)
     :param str userid: user ID (must match auth data)
-    :param mbid: musicbrainzid of the artist to remove
+    :param artist_mbid: musicbrainzid of the artist to remove
     :return: True on success
     """
-    url = "%s/artists/%s/%s" % (API_BASE_URL, userid, mbid)
+    url = "%s/artists/%s/%s" % (API_BASE_URL, userid, artist_mbid)
     response = requests.delete(url, auth=auth)
     response.raise_for_status()
     return True
 
 
-def get_release(mbid):  # TODO: testing
+def get_release(release_mbid):  # TODO: testing
     """
     get information about a release
 
-    :param str mbid: musicbrainz id of the release to query
+    :param str release_mbid: musicbrainz id of the release to query
     :return: dictionary with release data (artist, mbid, name, type, date)
     :rtype: dict
     """
-    url = "%s/release/%s" % (API_BASE_URL, mbid)
+    url = "%s/release/%s" % (API_BASE_URL, release_mbid)
     response = requests.get(url)
     response.raise_for_status()
     return response.json()
 
 
-def get_all_releases_for_artist(mbid, userid=None):  # TODO: testing
+def list_all_releases_for_artist(artist_mbid, userid=None):
     """
     get all releases for a given artist.
 
@@ -125,7 +126,7 @@ def get_all_releases_for_artist(mbid, userid=None):  # TODO: testing
     filters regarding release types to report are respected.
     This calls get_releases in a loop with the maximum allowed limit.
 
-    :param str mbid: musicbrainz id for the artist
+    :param str artist_mbid: musicbrainz id for the artist
     :param str|None userid: user id for filter rules
     :return: list of releases
     :rtype: list
@@ -134,16 +135,16 @@ def get_all_releases_for_artist(mbid, userid=None):  # TODO: testing
     offset = 0
     result = []
     while True:
-        part = get_releases(userid=userid, mbid=mbid, limit=limit,
-                            offset=offset)
+        part = list_releases(userid=userid, artist_mbid=artist_mbid,
+                             limit=limit, offset=offset)
         result += part
         if len(part) < RELEASE_LIST_LIMIT:
             return result
         offset += len(part)
 
 
-def get_releases(userid=None, limit=None, offset=None, mbid=None,
-                 since=None):  # TODO: testing
+def list_releases(userid=None, artist_mbid=None, limit=None, offset=None,
+                 since=None):
     """
     get releases for an artist (or all releases)
 
@@ -151,12 +152,12 @@ def get_releases(userid=None, limit=None, offset=None, mbid=None,
     preferences regarding release types to show are respected.
     The optional limit controls the maximum number of releases returned and
     the offset controls the first record to return. If since is set to a
-    release mbid, all releases after this release are returned.
+    release artist_mbid, all releases after this release are returned.
 
     :param str|None userid: user id to take release types from
     :param int|None limit: limit records per response
     :param int|None offset: offset for first returned record
-    :param str|None mbid: artist mbid
+    :param str|None artist_mbid: artist artist_mbid
     :param str|None since: search releases after that release
     :return: list of releases
     :rtype: list
@@ -173,8 +174,8 @@ def get_releases(userid=None, limit=None, offset=None, mbid=None,
         params["limit"] = limit
     if offset is not None:
         params["offset"] = offset
-    if mbid is not None:
-        params["mbid"] = mbid
+    if artist_mbid is not None:
+        params["mbid"] = artist_mbid
     if since is not None:
         params["since"] = since
 
@@ -202,7 +203,7 @@ def get_user(auth, userid=None):
     return response.json()
 
 
-def create_user(email, password, send_activation=True):  # TODO: untested
+def create_user(email, password, send_activation=True):  # TODO: testing
     """
     register a new user
 
@@ -216,14 +217,14 @@ def create_user(email, password, send_activation=True):  # TODO: untested
                              data={"email": email, "password": password,
                                    "activate": 1 if send_activation else 0})
     response.raise_for_status()
-    return response.json()  # TODO: JSON?
+    return True
 
 
 def delete_user(auth, userid):  # TODO: testing
     """
     delete a user
 
-    this does NOT ask for confirmation!
+    this does NOT ask for confirmation
 
     :param tuple auth: authentication data (username, password)
     :param userid: user id to delete (must match auth data)
@@ -235,12 +236,12 @@ def delete_user(auth, userid):  # TODO: testing
     return True
 
 
-def update_user(auth, userid, **kwargs):  # TODO: testing
+def update_user(auth, userid, **kwargs):
     """
     update user profile
 
-    updates user settings. if settings are ommited from kwargs, they are
-    kept. Valid settings and teir type are:
+    updates user settings. if settings are omitted from kwargs, they are
+    kept. Valid settings and their type are:
       * email: string, email address (requires new confirmation)
       * notify: bool, notifications per E-Mail
       * notify_album: bool, notify on new albums
