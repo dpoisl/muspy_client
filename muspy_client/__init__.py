@@ -4,7 +4,7 @@ OOP client for muspy.com
 
 
 __author__ = 'David Poisl <david@poisl.at>'
-__version__ = '1.0.0'
+__version__ = '0.1.0'
 
 
 from . import api
@@ -15,9 +15,9 @@ from . import api
 # TODO: testing
 
 
-class User(object):
+class ApiUser(object):
     """
-    muspy.com user
+    muspy.com user centric API
 
     :ivar str email: E-Mail Address
     :ivar str password: user password
@@ -49,6 +49,8 @@ class User(object):
         """
         constructor
 
+        connects to the API and fetches user information.
+
         :param str email: email address for authentication
         :param str password: password
         """
@@ -69,12 +71,19 @@ class User(object):
         """artists are read-only"""
         return self._artists
 
+    @property
+    def releases(self):
+        """get all the releases"""
+        for artist in self.artists:
+            for release in artist.releases:
+                yield release
+
     def __repr__(self):
         return "%s(email=%r, password='***')" % (self.__class__.__name__,
                                                  self.email)
 
     def __str__(self):
-        return "<muspy.com User %r>" % self.userid
+        return "<muspy.com UserInfo %r>" % self.userid
 
     @classmethod
     def register(cls, email, password, send_activation):  # TODO: untested
@@ -92,6 +101,11 @@ class User(object):
 
 
 class ArtistList(object):
+    """
+    OOP abstraction for subscribed artist and management of subscribed artists
+
+    this behaves more or less like a list.
+    """
     def __init__(self, auth, userid):
         self._auth = auth
         self._userid = userid
@@ -106,7 +120,7 @@ class ArtistList(object):
 
     @staticmethod
     def _artist(other):
-        if isinstance(other, api.Artist):
+        if isinstance(other, api.ArtistInfo):
             return Artist(other)
         elif isinstance(other, basestring):
             return Artist(api.get_artist(other))
@@ -154,7 +168,7 @@ class Artist(object):
         """
         constructor
 
-        :param api.Artist artist: artist data
+        :param api.ArtistInfo artist: artist data
         """
         self._artist = artist
         self._releases = None
@@ -166,7 +180,7 @@ class Artist(object):
         return self._releases
 
     def __str__(self):
-        return "<Artist %s>" % self._artist.name
+        return "<ArtistInfo %s>" % self._artist.name
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self._artist)

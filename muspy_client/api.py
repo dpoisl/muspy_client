@@ -7,7 +7,7 @@ https://github.com/alexkay/muspy/tree/master/api/
 
 
 __author__ = 'David Poisl <david@poisl.at>'
-__version__ = '1.0.0'
+__version__ = '0.1.0'
 
 
 import requests
@@ -19,26 +19,35 @@ LASTFM_IMPORT_LIMIT = 500  # maximum artists to import from last.fm
 API_BASE_URL = 'https://muspy.com/api/1'  # base url for API calls
 
 
-Artist = collections.namedtuple("Artist", ("name", "mbid", "sort_name",
-                                           "disambiguation"))
+ArtistInfo = collections.namedtuple('ArtistInfo', ('name', 'mbid', 'sort_name',
+                                                   'disambiguation'))
 
 
-Release = collections.namedtuple("Release", ("name", "mbid", "date", "type",
-                                             "artist"))
+ReleaseInfo = collections.namedtuple('ReleaseInfo', ('name', 'mbid', 'date',
+                                                     'type', 'artist'))
 
 
-User = collections.namedtuple("User", ("userid", "email", "notify",
-                                       "notify_album", "notify_single",
-                                       "notify_ep", "notify_live",
-                                       "notify_compilation",
-                                       "notify_remix", "notify_other"))
+UserInfo = collections.namedtuple('UserInfo', ('userid', 'email', 'notify',
+                                               'notify_album', 'notify_single',
+                                               'notify_ep', 'notify_live',
+                                               'notify_compilation',
+                                               'notify_remix', 'notify_other'))
 
 
 def _release_from_json(json_response):
-    artist = Artist(**json_response["artist"])
+    """
+    convert release info from json format to ReleaseInfo
+
+    converts he sub-dict for artist to an ArtistInfo too
+
+    :param dict json_response: JSON data for an release
+    :return: parsed and converted release info
+    :rtype: ReleaseInfo
+    """
+    artist = ArtistInfo(**json_response['artist'])
     data = json_response.copy()
-    data["artist"] = artist
-    return Release(**data)
+    data['artist'] = artist
+    return ReleaseInfo(**data)
 
 
 def get_artist(mbid):
@@ -46,15 +55,15 @@ def get_artist(mbid):
     get information about an artist
 
     :param str mbid: musicbrainz id of the artist to query
-    :return: fetched Artist
-    :rtype: Artist
+    :return: fetched ArtistInfo
+    :rtype: ArtistInfo
     :raises: HTTPError 410 if the artist mbid is not found
     :raises: HTTPError 404 if the artist mbid is syntactically invalid
     """
-    url = "%s/artist/%s" % (API_BASE_URL, mbid)
+    url = '%s/artist/%s' % (API_BASE_URL, mbid)
     response = requests.get(url)
     response.raise_for_status()
-    return Artist(**response.json())
+    return ArtistInfo(**response.json())
 
 
 def list_artist_subscriptions(auth, userid):
@@ -64,7 +73,7 @@ def list_artist_subscriptions(auth, userid):
     :param tuple auth: authentication data (username, password)
     :param str userid: user id (must match auth data)
     :return: subscribed artists
-    :rtype: list(Artist)
+    :rtype: list(ArtistInfo)
     :raises: HTTPError 401 if auth failed or the userid doesn't match
     :raises: HTTPError 404 if the userid is syntactically invalid
     :raises:
@@ -72,7 +81,7 @@ def list_artist_subscriptions(auth, userid):
     url = '%s/artists/%s' % (API_BASE_URL, userid)
     response = requests.get(url, auth=auth)
     response.raise_for_status()
-    return [Artist(**row) for row in response.json()]
+    return [ArtistInfo(**row) for row in response.json()]
 
 
 def add_artist_subscription(auth, userid, artist_mbid):
@@ -86,7 +95,7 @@ def add_artist_subscription(auth, userid, artist_mbid):
     :raises: HTTPError 401 if auth failed or the userid doesn't match
     :raises: HTTPError 404 if the userid or artist_mbid is syntactically invalid
     """
-    url = "%s/artists/%s/%s" % (API_BASE_URL, userid, artist_mbid)
+    url = '%s/artists/%s/%s' % (API_BASE_URL, userid, artist_mbid)
     response = requests.put(url, auth=auth)
     response.raise_for_status()
     return True
@@ -106,15 +115,15 @@ def import_lastfm_subscriptions(auth, userid, lastfm_username,
                       '6month', '3month' or '7day'
     :return: True on success
     """
-    url = "%s/artists/%s" % (API_BASE_URL, userid)
+    url = '%s/artists/%s' % (API_BASE_URL, userid)
     if period not in ('overall', '12month', '6month', '3month', '7day'):
-        raise ValueError("invalid period: %r" % period)
+        raise ValueError('invalid period: %r' % period)
     if limit < 0 or limit > LASTFM_IMPORT_LIMIT:
-        raise ValueError("invalid limit: %r" % limit)
+        raise ValueError('invalid limit: %r' % limit)
 
     response = requests.put(url, auth=auth,
-                            data={"lastfm_username": lastfm_username,
-                                  "count": limit, "period": period})
+                            data={'lastfm_username': lastfm_username,
+                                  'count': limit, 'period': period})
     response.raise_for_status()
     return True
 
@@ -130,7 +139,7 @@ def remove_artist_subscription(auth, userid, artist_mbid):
     :raises: HTTPError 401 if auth failed or the userid doesn't match
     :raises: HTTPError 404 if the userid or artist_mbid is syntactically invalid
     """
-    url = "%s/artists/%s/%s" % (API_BASE_URL, userid, artist_mbid)
+    url = '%s/artists/%s/%s' % (API_BASE_URL, userid, artist_mbid)
     response = requests.delete(url, auth=auth)
     response.raise_for_status()
     return True
@@ -142,14 +151,14 @@ def get_release(release_mbid):
 
     :param str release_mbid: musicbrainz id of the release to query
     :return: the release data
-    :rtype: Release
+    :rtype: ReleaseInfo
     """
-    url = "%s/release/%s" % (API_BASE_URL, release_mbid)
+    url = '%s/release/%s' % (API_BASE_URL, release_mbid)
     response = requests.get(url)
     response.raise_for_status()
     json = response.json()
-    json["artist"] = Artist(**json["artist"])
-    return Release(json)
+    json['artist'] = ArtistInfo(**json['artist'])
+    return ReleaseInfo(json)
 
 
 def list_all_releases_for_artist(artist_mbid, userid=None):
@@ -163,7 +172,7 @@ def list_all_releases_for_artist(artist_mbid, userid=None):
     :param str artist_mbid: musicbrainz id for the artist
     :param str|None userid: user id for filter rules
     :return: list of releases matching user filter and artist mbid
-    :rtype: list(Release)
+    :rtype: list(ReleaseInfo)
     :raises: HTTPError 404 if a parameter is syntactically invalid
     """
     limit = RELEASE_LIST_LIMIT
@@ -195,25 +204,25 @@ def list_releases(userid=None, artist_mbid=None, limit=None, offset=None,
     :param str|None artist_mbid: artist artist_mbid
     :param str|None since: search releases after that release
     :return: list of releases matchin gthe given criteria
-    :rtype: list(Release)
+    :rtype: list(ReleaseInfo)
     :raises: HTTPError 404 if a parameter is syntactically invalid
     """
     if userid is None:
-        url = "%s/releases" % API_BASE_URL
+        url = '%s/releases' % API_BASE_URL
     else:
-        url = "%s/releases/%s" % (API_BASE_URL, userid)
+        url = '%s/releases/%s' % (API_BASE_URL, userid)
 
     params = {}
     if limit is not None:
         if limit < 0 or limit > RELEASE_LIST_LIMIT:
-            raise ValueError("limit %r is invalid" % limit)
-        params["limit"] = limit
+            raise ValueError('limit %r is invalid' % limit)
+        params['limit'] = limit
     if offset is not None:
-        params["offset"] = offset
+        params['offset'] = offset
     if artist_mbid is not None:
-        params["mbid"] = artist_mbid
+        params['mbid'] = artist_mbid
     if since is not None:
-        params["since"] = since
+        params['since'] = since
 
     response = requests.get(url, params=params)
     response.raise_for_status()
@@ -229,17 +238,17 @@ def get_user(auth, userid=None):
     :param tuple auth: (username, password)
     :param str|None userid: user to query
     :return: user instanct
-    :rtype: User
+    :rtype: UserInfo
     :raises HTTPError 400 if the userid doesn't match authentication data
     :raises HTTPError 401 if the authentication failed
     """
     if userid is None:
         url = '%s/user' % (API_BASE_URL,)
     else:
-        url = "%s/user/%s" % (API_BASE_URL, userid)
+        url = '%s/user/%s' % (API_BASE_URL, userid)
     response = requests.get(url, auth=auth)
     response.raise_for_status()
-    return User(**response.json())
+    return UserInfo(**response.json())
 
 
 def create_user(email, password, send_activation=True):  # TODO: testing
@@ -253,8 +262,8 @@ def create_user(email, password, send_activation=True):  # TODO: testing
     :raises: HTTPError
     """
     url = '%s/user' % (API_BASE_URL,)
-    response = requests.post(url, data={"email": email, "password": password,
-                                        "activate": int(send_activation)})
+    response = requests.post(url, data={'email': email, 'password': password,
+                                        'activate': int(send_activation)})
     response.raise_for_status()
     return True
 
@@ -269,7 +278,7 @@ def delete_user(auth, userid):  # TODO: testing
     :param userid: user id to delete (must match auth data)
     :return: True on success
     """
-    url = "%s/user/%s" % (API_BASE_URL, userid)
+    url = '%s/user/%s' % (API_BASE_URL, userid)
     response = requests.delete(url, auth=auth)
     response.raise_for_status()
     return True
@@ -295,20 +304,20 @@ def update_user(auth, userid, **kwargs):
     :param str userid: user id to modify (must match auth data)
     :param dict kwargs: user settings to modify.
     :return: the new user settings
-    :rtype: User
+    :rtype: UserInfo
     """
     data = {}
     for (key, value) in kwargs.items():
-        if key in ("notify", "notify_album", "notify_single", "notify_ep",
-                   "notify_live", "notify_compilation", "notify_remix",
-                   "notify_other"):
+        if key in ('notify', 'notify_album', 'notify_single', 'notify_ep',
+                   'notify_live', 'notify_compilation', 'notify_remix',
+                   'notify_other'):
             data[key] = 1 if value else 0
-        elif key in ("email",):
+        elif key in ('email',):
             data[key] = value
         else:
-            raise RuntimeError("invalid argument: %r" % key)
+            raise RuntimeError('invalid argument: %r' % key)
 
-    url = "%s/user/%s" % (API_BASE_URL, userid)
+    url = '%s/user/%s' % (API_BASE_URL, userid)
     response = requests.put(url, auth=auth, data=data)
     response.raise_for_status()
-    return User(**response.json())
+    return UserInfo(**response.json())
