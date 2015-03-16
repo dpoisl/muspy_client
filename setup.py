@@ -5,7 +5,7 @@ muspy_client setup script
 """
 
 __author__ = 'David Poisl <david@poisl.at>'
-__version__ = "1.0.0"
+__version__ = "0.1.0"
 
 from setuptools import setup
 
