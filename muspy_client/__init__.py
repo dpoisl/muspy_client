@@ -1,5 +1,7 @@
 """
-OOP client for muspy.com
+client for muspy.com
+
+a low level api can be found in the api submodule
 """
 
 
@@ -8,10 +10,6 @@ __version__ = '0.1.0'
 
 
 from . import api
-
-
-# TODO: nice representation
-# TODO: testing
 
 
 class ApiUser(object):
@@ -71,7 +69,12 @@ class ApiUser(object):
 
     @property
     def artists(self):
-        """list of subscribed artists"""
+        """
+        get the list of subscribed artists
+
+        :return: list of subscribed artists
+        :rtype: AristList
+        """
         return self._artists
 
     @property
@@ -97,12 +100,12 @@ class ApiUser(object):
     @classmethod
     def register(cls, email, password, send_activation=True):  # TODO: untested
         """
-        registe ra new user
+        register a new user
 
         if send_activation is set to False, the confirmation mail sent by 
         muspy.com to the given email address is not sent.
 
-        :param str emai: email address (=username)
+        :param str email: email address (=username)
         :param str password: password for the new account
         :param bool send_activation: send account confirmation mail
         :return: ApiUser instance for the new user
@@ -128,7 +131,7 @@ class ApiUser(object):
         save user preferences
 
         after changing any of the writeable attributes (eG notifications)
-        the data is not saved unil update() is called.
+        the data is not saved until update() is called.
         This is not needed for artist subscriptions, they are stored instantly.
 
         :return: updated user data
@@ -145,7 +148,7 @@ class ArtistList(object):
     OOP abstraction for subscribed artist and management of subscribed artists
 
     this behaves more or less like a list where adding and removing items 
-    subscribes or unsubscribes from the artist.
+    subscribes or un-subscribes from the artist.
     """
     def __init__(self, auth, userid):
         """
@@ -158,8 +161,8 @@ class ArtistList(object):
         """
         self._auth = auth
         self._userid = userid
-        data = api.list_artist_subscriptions(self._auth, self._userid)]
-        self._data = [Artist.from_artistinfo(a) for a in data]
+        data = api.list_artist_subscriptions(self._auth, self._userid)
+        self._data = [Artist.from_artist_info(a) for a in data]
 
     def __repr__(self):
         return "ArtistList(%r)" % self._data
@@ -182,9 +185,9 @@ class ArtistList(object):
         :rtype: Artist
         """
         if isinstance(other, api.ArtistInfo):
-            return Artist.from_artistinfo(other)
+            return Artist.from_artist_info(other)
         elif isinstance(other, basestring):
-            return Artist.from_artistinfo(api.get_artist(other))
+            return Artist.from_artist_info(api.get_artist(other))
         else:
             raise ValueError("can't interpret %r" % other)
     
@@ -193,7 +196,7 @@ class ArtistList(object):
         return self.add(other)
 
     def __isub__(self, other):
-        """unsubscribe from an artist. see remove(other)"""
+        """un-subscribe from an artist. see remove(other)"""
         return self.remove(other)
 
     def add(self, other):  # TODO: untested
@@ -214,12 +217,12 @@ class ArtistList(object):
 
     def remove(self, other):  # TODO: untested
         """
-        unsubscribe from an artist
+        un-subscribe from an artist
 
         takes either an Artist or api.ArtistInfo instance or a string.
         Strings are assumed to be musicbrainz IDs for artists.
 
-        :param other: artist to unsubscribe from
+        :param other: artist to un-subscribe from
         :type other: Artist|api.ArtistInfo|str
         """
         other = self._artist(other)
@@ -256,31 +259,34 @@ class Artist(object):
     :ivar str sort_name: artist sort name (eG "Prodigy, The" for "The Prodigy")
     :ivar str disambiguation: a sort artist description if disambiguation 
                               is needed
-    :ivar list releases: lazily loaded list of releasees by this artist
+    :ivar list releases: lazily loaded list of releases by this artist
     """
-    def __init__(self, name, mbid, sort_name, disambiguation=u""):
+    def __init__(self, name, mbid, sort_name=None, disambiguation=""):
         """
         constructor
 
-        :param api.ArtistInfo artist: artist data
+        :param str name: artist name
+        :param str mbid: artist musicbrainz id
+        :param str|None sort_name: sort name (if not set, set to artist)
+        :param str|None disambiguation: disambiguation description if needed
         """
         self._releases = None
         self.name = name
         self.mbid = mbid
-        self.sort_name = sort_name
+        self.sort_name = sort_name if sort_name is not None else name
         self.disambiguation = disambiguation
     
     @classmethod
-    def from_artistinfo(cls, artistinfo):
+    def from_artist_info(cls, artist_info):
         """
         create Artist from ArtistInfo instance
 
-        :param api.ArtistInfo artistinfo: ArtistInfo instance
+        :param api.ArtistInfo artist_info: ArtistInfo instance
         :return: Artist instance
         :rtype: Artist
         """
-        return cls(artistinfo.name, artistinfo.bid, artistinfo.sort_name, 
-                   artistinfo.disambiguation)
+        return cls(artist_info.name, artist_info.mbid, artist_info.sort_name,
+                   artist_info.disambiguation)
 
     @classmethod
     def from_mbid(cls, mbid):
@@ -292,14 +298,14 @@ class Artist(object):
         :rtype: Artist
         """
         data = api.get_artist(mbid)
-        return cls.from_artistinfo(data)
+        return cls.from_artist_info(data)
 
     @property
     def releases(self):
         """
         list all releases of this artist
 
-        this lazilly fetches a list of all releases. Further reads are served
+        this lazily fetches a list of all releases. Further reads are served
         from a cache and have no cost.
         The users preferences regarding which release types to notify for are
         respected here too.
@@ -308,11 +314,13 @@ class Artist(object):
         :rtype: list(ReleaseInfo)
         """
         if self._releases is None:
-            self._releases = api.list_all_releases_for_artist(self._artist.mbid)
+            self._releases = api.list_all_releases_for_artist(self.mbid)
         return self._releases
 
     def __str__(self):
-        return "<Artist %s>" % self._artist.name
+        return "<Artist %s>" % self.name
 
     def __repr__(self):
-        return "%s(%r)" % (self.__class__.__name__, self._artist)
+        return "%s(%r, %r, %r, %r)" % (self.__class__.__name__, self.name,
+                                       self.mbid, self.sort_name,
+                                       self.disambiguation)

@@ -1,8 +1,8 @@
 """
-low level api access to muspy.com
+low level api access
 
-implementation of all API endpoints described at
-https://github.com/alexkay/muspy/tree/master/api/
+a direct implementation of all API endpoints with full parameters.
+
 """
 
 
@@ -14,9 +14,12 @@ import requests
 import collections
 
 
-RELEASE_LIST_LIMIT = 100  # maximum number of releases per request
-LASTFM_IMPORT_LIMIT = 500  # maximum artists to import from last.fm
-API_BASE_URL = 'https://muspy.com/api/1'  # base url for API calls
+RELEASE_LIST_LIMIT = 100
+"""maximum number of releases returned per request"""
+LASTFM_IMPORT_LIMIT = 500
+"""maximum artists to import from last.fm"""
+API_BASE_URL = 'https://muspy.com/api/1'
+"""base url for API calls"""
 
 
 ArtistInfo = collections.namedtuple('ArtistInfo', ('name', 'mbid', 'sort_name',
@@ -57,8 +60,8 @@ def get_artist(mbid):
     :param str mbid: musicbrainz id of the artist to query
     :return: fetched ArtistInfo
     :rtype: ArtistInfo
-    :raises: HTTPError 410 if the artist mbid is not found
-    :raises: HTTPError 404 if the artist mbid is syntactically invalid
+    :raises: HTTPError 410 if the artist mbid is not found,
+             HTTPError 404 if it is syntactically invalid
     """
     url = '%s/artist/%s' % (API_BASE_URL, mbid)
     response = requests.get(url)
@@ -74,8 +77,8 @@ def list_artist_subscriptions(auth, userid):
     :param str userid: user id (must match auth data)
     :return: subscribed artists
     :rtype: list(ArtistInfo)
-    :raises: HTTPError 401 if auth failed or the userid doesn't match
-    :raises: HTTPError 404 if the userid is syntactically invalid
+    :raises: HTTPError 401 if auth failed or the userid doesn't match,
+             HTTPError 404 if the userid is syntactically invalid
     :raises:
     """
     url = '%s/artists/%s' % (API_BASE_URL, userid)
@@ -92,8 +95,8 @@ def add_artist_subscription(auth, userid, artist_mbid):
     :param str userid: user ID (must match auth data)
     :param str artist_mbid: musicbrainz ID of the artist to add
     :return: True on success
-    :raises: HTTPError 401 if auth failed or the userid doesn't match
-    :raises: HTTPError 404 if the userid or artist_mbid is syntactically invalid
+    :raises: HTTPError 401 if auth failed or the userid doesn't match,
+             HTTPError 404 if the userid or artist_mbid is syntactically invalid
     """
     url = '%s/artists/%s/%s' % (API_BASE_URL, userid, artist_mbid)
     response = requests.put(url, auth=auth)
@@ -109,11 +112,12 @@ def import_lastfm_subscriptions(auth, userid, lastfm_username,
 
     :param tuple auth: authentication data (username, password)
     :param str userid: user ID (must match auth data)
-    :param str lastfm_username: last.fm lastfm_username
+    :param str lastfm_username: last.fm lastfm username
     :param int limit: number of artists to import
     :param str period: period to examine. one of 'overall', '12month',
                       '6month', '3month' or '7day'
     :return: True on success
+    :raises: HTTPError on errors
     """
     url = '%s/artists/%s' % (API_BASE_URL, userid)
     if period not in ('overall', '12month', '6month', '3month', '7day'):
@@ -132,12 +136,12 @@ def remove_artist_subscription(auth, userid, artist_mbid):
     """
     remove an artist from the list of subscribed artists
 
-    :param tuple auth: tuple containint (username, password)
+    :param tuple auth: tuple containing (username, password)
     :param str userid: user ID (must match auth data)
-    :param artist_mbid: musicbrainzid of the artist to remove
+    :param artist_mbid: musicbrainz id of the artist to remove
     :return: True on success
-    :raises: HTTPError 401 if auth failed or the userid doesn't match
-    :raises: HTTPError 404 if the userid or artist_mbid is syntactically invalid
+    :raises: HTTPError 401 if auth failed or the userid doesn't match,
+             HTTPError 404 if the userid or artist_mbid is syntactically invalid
     """
     url = '%s/artists/%s/%s' % (API_BASE_URL, userid, artist_mbid)
     response = requests.delete(url, auth=auth)
@@ -188,7 +192,7 @@ def list_all_releases_for_artist(artist_mbid, userid=None):
 
 
 def list_releases(userid=None, artist_mbid=None, limit=None, offset=None,
-                 since=None):
+                  since=None):
     """
     get releases for an artist (or all releases)
 
@@ -203,7 +207,7 @@ def list_releases(userid=None, artist_mbid=None, limit=None, offset=None,
     :param int|None offset: offset for first returned record
     :param str|None artist_mbid: artist artist_mbid
     :param str|None since: search releases after that release
-    :return: list of releases matchin gthe given criteria
+    :return: list of releases matching the given criteria
     :rtype: list(ReleaseInfo)
     :raises: HTTPError 404 if a parameter is syntactically invalid
     """
@@ -239,8 +243,8 @@ def get_user(auth, userid=None):
     :param str|None userid: user to query
     :return: user instanct
     :rtype: UserInfo
-    :raises HTTPError 400 if the userid doesn't match authentication data
-    :raises HTTPError 401 if the authentication failed
+    :raises: HTTPError 400 if the userid doesn't match authentication data,
+             HTTPError 401 if the authentication failed
     """
     if userid is None:
         url = '%s/user' % (API_BASE_URL,)
@@ -257,9 +261,10 @@ def create_user(email, password, send_activation=True):  # TODO: testing
 
     :param str email: email address for the new user (=username)
     :param str password: password for the new user
-    :param bool send_activation:
-    :return:
-    :raises: HTTPError
+    :param bool send_activation: send activation confirmation e-mail
+    :return: True on success
+    :rtype: bool
+    :raises: HTTPError on errors
     """
     url = '%s/user' % (API_BASE_URL,)
     response = requests.post(url, data={'email': email, 'password': password,
@@ -277,6 +282,8 @@ def delete_user(auth, userid):  # TODO: testing
     :param tuple auth: authentication data (username, password)
     :param userid: user id to delete (must match auth data)
     :return: True on success
+    :rtype: bool
+    :raises: HTTPError on errors
     """
     url = '%s/user/%s' % (API_BASE_URL, userid)
     response = requests.delete(url, auth=auth)
