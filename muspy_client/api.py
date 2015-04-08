@@ -1,8 +1,7 @@
 """
 low level api access
 
-a direct implementation of all API endpoints with full parameters.
-
+A direct implementation of all API endpoints with full parameters.
 """
 
 
@@ -16,8 +15,10 @@ import collections
 
 RELEASE_LIST_LIMIT = 100
 """maximum number of releases returned per request"""
+
 LASTFM_IMPORT_LIMIT = 500
 """maximum artists to import from last.fm"""
+
 API_BASE_URL = 'https://muspy.com/api/1'
 """base url for API calls"""
 
@@ -95,8 +96,7 @@ def add_artist_subscription(auth, userid, artist_mbid):
     :param str userid: user ID (must match auth data)
     :param str artist_mbid: musicbrainz ID of the artist to add
     :return: True on success
-    :raises: HTTPError 401 if auth failed or the userid doesn't match,
-             HTTPError 404 if the userid or artist_mbid is syntactically invalid
+    :raises: HTTPError on errors
     """
     url = '%s/artists/%s/%s' % (API_BASE_URL, userid, artist_mbid)
     response = requests.put(url, auth=auth)
@@ -140,8 +140,7 @@ def remove_artist_subscription(auth, userid, artist_mbid):
     :param str userid: user ID (must match auth data)
     :param artist_mbid: musicbrainz id of the artist to remove
     :return: True on success
-    :raises: HTTPError 401 if auth failed or the userid doesn't match,
-             HTTPError 404 if the userid or artist_mbid is syntactically invalid
+    :raises: HTTPError on errors
     """
     url = '%s/artists/%s/%s' % (API_BASE_URL, userid, artist_mbid)
     response = requests.delete(url, auth=auth)
@@ -156,6 +155,7 @@ def get_release(release_mbid):
     :param str release_mbid: musicbrainz id of the release to query
     :return: the release data
     :rtype: ReleaseInfo
+    :raises: HTTPError on errors
     """
     url = '%s/release/%s' % (API_BASE_URL, release_mbid)
     response = requests.get(url)
@@ -177,7 +177,7 @@ def list_all_releases_for_artist(artist_mbid, userid=None):
     :param str|None userid: user id for filter rules
     :return: list of releases matching user filter and artist mbid
     :rtype: list(ReleaseInfo)
-    :raises: HTTPError 404 if a parameter is syntactically invalid
+    :raises: HTTPError on errors
     """
     limit = RELEASE_LIST_LIMIT
     offset = 0
@@ -209,7 +209,7 @@ def list_releases(userid=None, artist_mbid=None, limit=None, offset=None,
     :param str|None since: search releases after that release
     :return: list of releases matching the given criteria
     :rtype: list(ReleaseInfo)
-    :raises: HTTPError 404 if a parameter is syntactically invalid
+    :raises: HTTPError on errors
     """
     if userid is None:
         url = '%s/releases' % API_BASE_URL
@@ -241,10 +241,9 @@ def get_user(auth, userid=None):
 
     :param tuple auth: (username, password)
     :param str|None userid: user to query
-    :return: user instanct
+    :return: user data
     :rtype: UserInfo
-    :raises: HTTPError 400 if the userid doesn't match authentication data,
-             HTTPError 401 if the authentication failed
+    :raises: HTTPError on errors
     """
     if userid is None:
         url = '%s/user' % (API_BASE_URL,)
@@ -312,6 +311,7 @@ def update_user(auth, userid, **kwargs):
     :param dict kwargs: user settings to modify.
     :return: the new user settings
     :rtype: UserInfo
+    :raises: HTTPError on errors
     """
     data = {}
     for (key, value) in kwargs.items():

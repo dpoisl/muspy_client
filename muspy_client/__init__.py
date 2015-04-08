@@ -1,7 +1,9 @@
 """
-client for muspy.com
+The muspy_client module contains an OOP API for the most commonly used
+operations. The submodule api provides access to all exposed functions in the
+API.
 
-a low level api can be found in the api submodule
+The main entry point here probably should be the ApiUser class.
 """
 
 
@@ -14,14 +16,15 @@ from . import api
 
 class ApiUser(object):
     """
-    muspy.com user centric API
+    user centric API
 
     represents a user on muspy.com and his subscriptions.
-    
-    :ivar str email: E-Mail Address
-    :ivar str password: user password
-    :ivar str userid: muspy.com user ID
-    :ivar ArtistList artists: subscribed artists
+
+    :ivar str email: E-Mail Address and authentication user name
+    :ivar str password: password for http authenticatoin
+
+    :ivar str userid: muspy.com user ID - set after login
+    :ivar ArtistList artists: subscribed artists - fetched after login
 
     :ivar bool notify: notification per mail enabled
     :ivar bool notify_album: receive notifications for new albums
