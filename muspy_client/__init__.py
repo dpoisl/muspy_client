@@ -16,12 +16,12 @@ from . import api
 
 class ApiUser(object):
     """
-    user centric API
+    User centric API.
 
-    represents a user on muspy.com and his subscriptions.
+    Represents a user on muspy.com and his subscriptions.
 
     :ivar str email: E-Mail Address and authentication user name
-    :ivar str password: password for http authenticatoin
+    :ivar str password: password for http authentication
 
     :ivar str userid: muspy.com user ID - set after login
     :ivar ArtistList artists: subscribed artists - fetched after login
@@ -42,7 +42,7 @@ class ApiUser(object):
     @property
     def auth(self):
         """
-        property for authentication data
+        Property for authentication data.
 
         :return: tuple of (email/username, password)
         :rtype: tuple
@@ -51,9 +51,9 @@ class ApiUser(object):
 
     def __init__(self, email, password):
         """
-        constructor
+        Constructor.
 
-        connects to the API and fetches account information as well as
+        Connects to the API and fetches account information as well as
         the list of subscribed artists.
 
         :param str email: email address for authentication
@@ -73,7 +73,7 @@ class ApiUser(object):
     @property
     def artists(self):
         """
-        get the list of subscribed artists
+        Get the list of subscribed artists.
 
         :return: list of subscribed artists
         :rtype: AristList
@@ -83,11 +83,11 @@ class ApiUser(object):
     @property
     def releases(self):
         """
-        get all releases for subscribed artists
+        Get all releases for subscribed artists.
 
         Loads the artist list and all releases for these artists. This might 
         be a long-running operation, if you need this feature it might be 
-        better to use the low-level functions in muspy_client.api
+        better to use the low-level functions in muspy_client.api.
         """
         for artist in self.artists:
             for release in artist.releases:
@@ -103,9 +103,9 @@ class ApiUser(object):
     @classmethod
     def register(cls, email, password, send_activation=True):  # TODO: untested
         """
-        register a new user
+        Register a new user.
 
-        if send_activation is set to False, the confirmation mail sent by 
+        If send_activation is set to False, the confirmation mail sent by
         muspy.com to the given email address is not sent.
 
         :param str email: email address (=username)
@@ -119,10 +119,10 @@ class ApiUser(object):
 
     def delete(self):  # TODO: untested
         """
-        delete user from muspy.com
+        Delete user from muspy.com.
 
-        This action can not be reversed. All user settings
-        and the user is removed from muspy.com!
+        This action can not be reversed. All user settings and the user
+        is removed from muspy.com!
         
         :return: True on success
         :rtype: bool
@@ -131,11 +131,11 @@ class ApiUser(object):
 
     def update(self):  # TODO: untested
         """
-        save user preferences
+        Save user preferences.
 
-        after changing any of the writeable attributes (eG notifications)
-        the data is not saved until update() is called.
-        This is not needed for artist subscriptions, they are stored instantly.
+        After changing any of the writeable attributes (eG notifications)
+        the data is not saved until update() is called. This is not needed
+        for artist subscriptions, they are stored instantly.
 
         :return: updated user data
         :rtype: api.UserInfo
@@ -148,14 +148,14 @@ class ApiUser(object):
 
 class ArtistList(object):
     """
-    OOP abstraction for subscribed artist and management of subscribed artists
+    OOP abstraction for subscribed artist and management of subscribed artists.
 
-    this behaves more or less like a list where adding and removing items 
+    This behaves more or less like a list where adding and removing items
     subscribes or un-subscribes from the artist.
     """
     def __init__(self, auth, userid):
         """
-        constructor
+        Constructor.
 
         Requires the authentication data and userid string of the user.
 
@@ -176,11 +176,10 @@ class ArtistList(object):
     @staticmethod
     def _artist(other):
         """
-        helper to get an Artist instance
+        Helper to get an Artist instance.
 
-        takes an Artist, api.ArtistInfo or string to create
-        an Artist instance. If a string is given, it is assumed
-        to be a musicbrainz ID
+        Takes an Artist, api.ArtistInfo or string to create an Artist instance.
+        If a string is given, it is assumed to be a musicbrainz ID.
 
         :param other: source object
         :type other: Artist|api.ArtistInfo|str
@@ -195,18 +194,18 @@ class ArtistList(object):
             raise ValueError("can't interpret %r" % other)
     
     def __iadd__(self, other):
-        """subscribe to a new artist. see add(other)"""
+        """Subscribe to a new artist. see add(other)."""
         return self.add(other)
 
     def __isub__(self, other):
-        """un-subscribe from an artist. see remove(other)"""
+        """Un-subscribe from an artist. see remove(other)."""
         return self.remove(other)
 
     def add(self, other):  # TODO: untested
         """
-        subscribe to a new artist
+        Subscribe to a new artist.
 
-        takes either an Artist or api.ArtistInfo instance or a string.
+        Takes either an Artist or api.ArtistInfo instance or a string.
         Strings are assumed to be musicbrainz IDs for artists.
 
         :param other: artist to subscribe to
@@ -220,9 +219,9 @@ class ArtistList(object):
 
     def remove(self, other):  # TODO: untested
         """
-        un-subscribe from an artist
+        Un-subscribe from an artist.
 
-        takes either an Artist or api.ArtistInfo instance or a string.
+        Takes either an Artist or api.ArtistInfo instance or a string.
         Strings are assumed to be musicbrainz IDs for artists.
 
         :param other: artist to un-subscribe from
@@ -252,10 +251,9 @@ class ArtistList(object):
 
 class Artist(object):
     """
-    Artist Representation
+    Artist Representation.
 
-    represents an artist as well as a list of all releases by
-    this artist.
+    Represents an artist as well as a list of its releases.
 
     :ivar str name: artist name
     :ivar str mbid: artist musicbrainz ID
@@ -266,7 +264,7 @@ class Artist(object):
     """
     def __init__(self, name, mbid, sort_name=None, disambiguation=""):
         """
-        constructor
+        Constructor.
 
         :param str name: artist name
         :param str mbid: artist musicbrainz id
@@ -282,7 +280,7 @@ class Artist(object):
     @classmethod
     def from_artist_info(cls, artist_info):
         """
-        create Artist from ArtistInfo instance
+        Create Artist from ArtistInfo instance.
 
         :param api.ArtistInfo artist_info: ArtistInfo instance
         :return: Artist instance
@@ -294,7 +292,7 @@ class Artist(object):
     @classmethod
     def from_mbid(cls, mbid):
         """
-        load Artist from Musicbrainz ID
+        Load Artist from Musicbrainz ID.
 
         :param str mbid: artist musicbrainz ID
         :return: Artist info
@@ -306,12 +304,12 @@ class Artist(object):
     @property
     def releases(self):
         """
-        list all releases of this artist
+        List all releases of this artist.
 
-        this lazily fetches a list of all releases. Further reads are served
-        from a cache and have no cost.
-        The users preferences regarding which release types to notify for are
-        respected here too.
+        This lazily fetches a list of all releases. Further reads are served
+        from a cache and have no cost. The users preferences regarding which
+        release types to notify for are used to filter the artist releases on
+        the server side.
 
         :return: list of artist releases
         :rtype: list(ReleaseInfo)

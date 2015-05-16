@@ -1,5 +1,5 @@
 """
-low level api access
+Low level API access.
 
 A direct implementation of all API endpoints with full parameters.
 """
@@ -40,9 +40,10 @@ UserInfo = collections.namedtuple('UserInfo', ('userid', 'email', 'notify',
 
 def _release_from_json(json_response):
     """
-    convert release info from json format to ReleaseInfo
+    Convert release info from json format to ReleaseInfo.
 
-    converts he sub-dict for artist to an ArtistInfo too
+    Doesn't only convert the Release data but also the contained
+    artist information.
 
     :param dict json_response: JSON data for an release
     :return: parsed and converted release info
@@ -56,7 +57,7 @@ def _release_from_json(json_response):
 
 def get_artist(mbid):
     """
-    get information about an artist
+    Gget information about an artist.
 
     :param str mbid: musicbrainz id of the artist to query
     :return: fetched ArtistInfo
@@ -72,7 +73,7 @@ def get_artist(mbid):
 
 def list_artist_subscriptions(auth, userid):
     """
-    list all artists a user subscribed to
+    List all artists a user subscribed to.
 
     :param tuple auth: authentication data (username, password)
     :param str userid: user id (must match auth data)
@@ -90,13 +91,13 @@ def list_artist_subscriptions(auth, userid):
 
 def add_artist_subscription(auth, userid, artist_mbid):
     """
-    add an artist to the list of subscribed artists
+    Add an artist to the list of subscribed artists.
 
     :param tuple auth: authentication data (username, password)
     :param str userid: user ID (must match auth data)
     :param str artist_mbid: musicbrainz ID of the artist to add
     :return: True on success
-    :raises: HTTPError on errors
+    :raises: HTTPError
     """
     url = '%s/artists/%s/%s' % (API_BASE_URL, userid, artist_mbid)
     response = requests.put(url, auth=auth)
@@ -108,7 +109,7 @@ def import_lastfm_subscriptions(auth, userid, lastfm_username,
                                 limit=LASTFM_IMPORT_LIMIT,
                                 period='overall'):  # TODO: testing
     """
-    import last.fm artists to a user
+    Import last.fm artists to a user.
 
     :param tuple auth: authentication data (username, password)
     :param str userid: user ID (must match auth data)
@@ -117,7 +118,7 @@ def import_lastfm_subscriptions(auth, userid, lastfm_username,
     :param str period: period to examine. one of 'overall', '12month',
                       '6month', '3month' or '7day'
     :return: True on success
-    :raises: HTTPError on errors
+    :raises: HTTPError
     """
     url = '%s/artists/%s' % (API_BASE_URL, userid)
     if period not in ('overall', '12month', '6month', '3month', '7day'):
@@ -134,13 +135,13 @@ def import_lastfm_subscriptions(auth, userid, lastfm_username,
 
 def remove_artist_subscription(auth, userid, artist_mbid):
     """
-    remove an artist from the list of subscribed artists
+    Remove an artist from the list of subscribed artists.
 
     :param tuple auth: tuple containing (username, password)
     :param str userid: user ID (must match auth data)
     :param artist_mbid: musicbrainz id of the artist to remove
     :return: True on success
-    :raises: HTTPError on errors
+    :raises: HTTPError
     """
     url = '%s/artists/%s/%s' % (API_BASE_URL, userid, artist_mbid)
     response = requests.delete(url, auth=auth)
@@ -150,7 +151,7 @@ def remove_artist_subscription(auth, userid, artist_mbid):
 
 def get_release(release_mbid):
     """
-    get information about a release
+    Get information about a release.
 
     :param str release_mbid: musicbrainz id of the release to query
     :return: the release data
@@ -167,7 +168,7 @@ def get_release(release_mbid):
 
 def list_all_releases_for_artist(artist_mbid, userid=None):
     """
-    get all releases for a given artist.
+    Get all releases for a given artist.
 
     returns all releases for one artist. If the userid is set, the users
     filters regarding release types to report are respected.
@@ -177,7 +178,7 @@ def list_all_releases_for_artist(artist_mbid, userid=None):
     :param str|None userid: user id for filter rules
     :return: list of releases matching user filter and artist mbid
     :rtype: list(ReleaseInfo)
-    :raises: HTTPError on errors
+    :raises: HTTPError
     """
     limit = RELEASE_LIST_LIMIT
     offset = 0
@@ -194,10 +195,11 @@ def list_all_releases_for_artist(artist_mbid, userid=None):
 def list_releases(userid=None, artist_mbid=None, limit=None, offset=None,
                   since=None):
     """
-    get releases for an artist (or all releases)
+    Get releases for an artist (or all releases).
 
-    various filters can be applied. if a userid is given, the users
+    Various filters can be applied. if a userid is given, the users
     preferences regarding release types to show are respected.
+
     The optional limit controls the maximum number of releases returned and
     the offset controls the first record to return. If since is set to a
     release artist_mbid, all releases after this release are returned.
@@ -209,7 +211,7 @@ def list_releases(userid=None, artist_mbid=None, limit=None, offset=None,
     :param str|None since: search releases after that release
     :return: list of releases matching the given criteria
     :rtype: list(ReleaseInfo)
-    :raises: HTTPError on errors
+    :raises: HTTPError
     """
     if userid is None:
         url = '%s/releases' % API_BASE_URL
@@ -235,7 +237,7 @@ def list_releases(userid=None, artist_mbid=None, limit=None, offset=None,
 
 def get_user(auth, userid=None):
     """
-    get info for a user - requires authentication
+    Get info for a user - requires authentication.
 
     if no userid is given, the user matching the authentication info is returned
 
@@ -243,7 +245,7 @@ def get_user(auth, userid=None):
     :param str|None userid: user to query
     :return: user data
     :rtype: UserInfo
-    :raises: HTTPError on errors
+    :raises: HTTPError
     """
     if userid is None:
         url = '%s/user' % (API_BASE_URL,)
@@ -256,14 +258,14 @@ def get_user(auth, userid=None):
 
 def create_user(email, password, send_activation=True):  # TODO: testing
     """
-    register a new user
+    Register a new user.
 
     :param str email: email address for the new user (=username)
     :param str password: password for the new user
     :param bool send_activation: send activation confirmation e-mail
     :return: True on success
     :rtype: bool
-    :raises: HTTPError on errors
+    :raises: HTTPError
     """
     url = '%s/user' % (API_BASE_URL,)
     response = requests.post(url, data={'email': email, 'password': password,
@@ -274,15 +276,15 @@ def create_user(email, password, send_activation=True):  # TODO: testing
 
 def delete_user(auth, userid):  # TODO: testing
     """
-    delete a user
+    Delete a user.
 
-    this does NOT ask for confirmation
+    This does NOT ask for confirmation!
 
     :param tuple auth: authentication data (username, password)
     :param userid: user id to delete (must match auth data)
     :return: True on success
     :rtype: bool
-    :raises: HTTPError on errors
+    :raises: HTTPError
     """
     url = '%s/user/%s' % (API_BASE_URL, userid)
     response = requests.delete(url, auth=auth)
@@ -292,9 +294,9 @@ def delete_user(auth, userid):  # TODO: testing
 
 def update_user(auth, userid, **kwargs):
     """
-    update user profile
+    Update user profile.
 
-    updates user settings. if settings are omitted from kwargs, they are
+    Updates user settings. if settings are omitted from kwargs, they are
     kept. Valid settings and their type are:
       * email: string, email address (requires new confirmation)
       * notify: bool, notifications per E-Mail
@@ -311,7 +313,7 @@ def update_user(auth, userid, **kwargs):
     :param dict kwargs: user settings to modify.
     :return: the new user settings
     :rtype: UserInfo
-    :raises: HTTPError on errors
+    :raises: HTTPError
     """
     data = {}
     for (key, value) in kwargs.items():
